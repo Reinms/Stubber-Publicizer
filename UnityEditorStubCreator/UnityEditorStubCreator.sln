@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29709.97
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityEditorStubCreator", "UnityEditorStubCreator.csproj", "{CE5D8BC3-0065-4DED-A02D-49BAAB15D6FF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CE5D8BC3-0065-4DED-A02D-49BAAB15D6FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE5D8BC3-0065-4DED-A02D-49BAAB15D6FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE5D8BC3-0065-4DED-A02D-49BAAB15D6FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE5D8BC3-0065-4DED-A02D-49BAAB15D6FF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {878B9075-0E62-4B9D-A2FB-E8EB28A58952}
+	EndGlobalSection
+EndGlobal
