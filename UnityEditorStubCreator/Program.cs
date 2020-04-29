@@ -6,13 +6,19 @@ using System.Text;
 
 namespace UnityEditorStubCreator
 {
-    class Program
+    public class Program
     {
-        static void Main( string[] args )
+        public static void Main( String[] args )
         {
+
         }
 
+
+
+
+        #region random stuff
         [MethodImpl( MethodImplOptions.ForwardRef )]
-        public static extern int Square( int number );
+        public static extern Int32 Square( Int32 number );
+        #endregion
     }
 }
