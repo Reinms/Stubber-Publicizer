@@ -1,9 +1,9 @@
-﻿.class public UnityEditorStubCreator.Program
+﻿.class public AssemblyStripper.ILMethods
 {
 	.method public static int32 Square(int32 number) cil managed
 	{
 		.maxstack 2
-		ldarg.0
+		ldarg.1
 		dup
 		mul
 		ret

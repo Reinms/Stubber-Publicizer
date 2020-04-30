@@ -3,12 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29709.97
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityEditorStubCreator", "UnityEditorStubCreator.csproj", "{CE5D8BC3-0065-4DED-A02D-49BAAB15D6FF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssemblyStripper", "AssemblyStripper\AssemblyStripper.csproj", "{23ADE4D0-2717-4859-ACA9-E316CE659262}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8A89DC99-0C55-434C-83B7-73F74A67EBDE}"
-	ProjectSection(SolutionItems) = preProject
-		.editorconfig = .editorconfig
-		..\README.md = ..\README.md
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleStubber", "ConsoleStubber\ConsoleStubber.csproj", "{D42AFA6F-B8F0-43BE-A03B-3991BA2F7D96}"
+	ProjectSection(ProjectDependencies) = postProject
+		{23ADE4D0-2717-4859-ACA9-E316CE659262} = {23ADE4D0-2717-4859-ACA9-E316CE659262}
 	EndProjectSection
 EndProject
 Global
@@ -17,15 +16,19 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{CE5D8BC3-0065-4DED-A02D-49BAAB15D6FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CE5D8BC3-0065-4DED-A02D-49BAAB15D6FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CE5D8BC3-0065-4DED-A02D-49BAAB15D6FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CE5D8BC3-0065-4DED-A02D-49BAAB15D6FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23ADE4D0-2717-4859-ACA9-E316CE659262}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23ADE4D0-2717-4859-ACA9-E316CE659262}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23ADE4D0-2717-4859-ACA9-E316CE659262}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23ADE4D0-2717-4859-ACA9-E316CE659262}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D42AFA6F-B8F0-43BE-A03B-3991BA2F7D96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D42AFA6F-B8F0-43BE-A03B-3991BA2F7D96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D42AFA6F-B8F0-43BE-A03B-3991BA2F7D96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D42AFA6F-B8F0-43BE-A03B-3991BA2F7D96}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {878B9075-0E62-4B9D-A2FB-E8EB28A58952}
+		SolutionGuid = {DD8353EA-D192-4478-8C1F-EFF43032C8F2}
 	EndGlobalSection
 EndGlobal
