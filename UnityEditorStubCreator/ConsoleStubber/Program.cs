@@ -28,6 +28,7 @@ namespace ConsoleStubber
                 targetAssemblyPath = args[0],
                 outputPath = outPath.FullName,
                 assemblyName = "Test",
+                pathToEditor = "P:\\Unity Versions\\2018.4.16f1\\Editor",
             };
 
             if( Stubber.StubAssembly( options ) )

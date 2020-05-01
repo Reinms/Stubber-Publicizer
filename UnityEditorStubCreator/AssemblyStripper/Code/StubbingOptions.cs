@@ -8,6 +8,7 @@ namespace AssemblyStripper
     {
         public String targetAssemblyPath;
         public String outputPath;
+        public String pathToEditor;
         public String assemblyName;
     }
 }

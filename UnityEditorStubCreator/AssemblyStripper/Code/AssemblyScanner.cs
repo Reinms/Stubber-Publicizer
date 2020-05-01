@@ -7,19 +7,16 @@ namespace AssemblyStripper.Code
 {
     internal static class AssemblyScanner
     {
-        internal delegate Boolean TypeCheckDelegate( in TypeDefinition type );
-
-        internal static void ScanAndWriteValidTypes( in AssemblyDefinition source, in AssemblyWriter writer, in TypeCheckDelegate condition )
+        internal static void ScanAndWriteValidTypes( in AssemblyDefinition source, in AssemblyWriter writer, in WriteConditions conditions )
         {
             var module = source.MainModule;
 
-            var types = module.GetTypes();
-
-            foreach( var type in module.GetTypes() )
+            foreach( var type in module.Types )
             {
-                if( condition( type ) )
+                if( type == null ) continue;
+                if( conditions.CheckType( type ) )
                 {
-                    writer.WriteType( type );
+                    writer.WriteType( type, conditions );
                 }
             }
         }
