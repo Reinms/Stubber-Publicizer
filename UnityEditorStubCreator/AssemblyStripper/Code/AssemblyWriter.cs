@@ -37,14 +37,15 @@ namespace AssemblyStripper.Code
         private List<PropertyDefinition> propertiesToWrite = new List<PropertyDefinition>();
         private List<CustomAttribute> attributesToApply = new List<CustomAttribute>();
 
-        internal void WriteType( in TypeDefinition origType, in WriteConditions conditions, in TypeDefinition parentType = null )
+        internal void WriteType( in TypeDefinition origType, in WriteConditions conditions )
         {
             this.conditions = conditions;
-            // TODO: Write the type
+            var parentType = origType.DeclaringType;
+
 
             if( parentType == null )
             {
-                var def = new TypeDefinition( origType.FullName, origType.Name, origType.Attributes, this.RemapType(origType.BaseType) );
+                var def = new TypeDefinition( origType.Namespace, origType.Name, origType.Attributes, this.RemapType(origType.BaseType) );
                 foreach( var attrib in origType.CustomAttributes )
                 {
                     this.attributesToApply.Add( attrib );
@@ -54,7 +55,7 @@ namespace AssemblyStripper.Code
             } else
             {
                 var parent = this.writtenTypes[parentType.FullName];
-                var def = new TypeDefinition( origType.FullName, origType.Name, origType.Attributes, this.RemapType(origType.BaseType) );
+                var def = new TypeDefinition( origType.Namespace, origType.Name, origType.Attributes, this.RemapType(origType.BaseType) );
                 foreach( var attrib in origType.CustomAttributes )
                 {
                     def.CustomAttributes.Add( attrib );
@@ -209,7 +210,6 @@ namespace AssemblyStripper.Code
             }
             if( this.referenceMap.TryGetValue( name.Name, out var asm ) )
             {
-                Console.WriteLine( "Map lookup success" );
                 if( asm == null ) return type;
                 var t = asm.MainModule.GetType( type.FullName );
                 if( t == null )
