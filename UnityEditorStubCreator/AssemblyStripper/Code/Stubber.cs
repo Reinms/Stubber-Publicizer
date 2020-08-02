@@ -183,6 +183,7 @@
                         case "System.UInt64":
                         case "System.IntPtr":
                         case "System.UIntPtr":
+                        case "System.Char":
                             proc.Emit(OpCodes.Ldc_I4_0);
                             break;
                         case var v:
