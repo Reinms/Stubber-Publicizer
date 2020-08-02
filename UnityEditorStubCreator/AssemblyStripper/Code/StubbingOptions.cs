@@ -12,6 +12,7 @@
         public Boolean makeReferenceStubPublic;
         public Boolean outputForwardAssembly;
         public Boolean removeNonSerializedTypesForEditor;
+        public Boolean removeReadonly;
         public String targetAssemblyPath;
         public String outputPath;
         public String editorRenameTo;

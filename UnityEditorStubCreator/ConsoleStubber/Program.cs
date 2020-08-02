@@ -56,7 +56,7 @@
                 OutputAndPublic("Reference Assembly", true, out Boolean outputRefAsm, out Boolean pubRefAsm);
 #if EDITORFWD
                 OutputAndPublic("Editor Assembly", true, out Boolean outputEditorAsm, out Boolean pubEditorAsm);
-                OutputAndPublic("Forward Assembly", false, out Boolean outputForwardAsm, out Boolean pubForwardAsm);
+                OutputAndPublic("Forward Assembly", false, out Boolean outputForwardAsm, out Boolean _);
                 if( outputEditorAsm || outputForwardAsm)
                 {
                     Console.WriteLine("Editor/Forward assembly name:");
@@ -72,7 +72,9 @@
                 Boolean pubEditorAsm = false;
                 Boolean outputForwardAsm = false;
 #endif
-
+                Console.WriteLine("Remove readonly?");
+                Boolean removeReadonly = false;
+                while(!PositiveOrNegativeInput(out removeReadonly)) { }
 
                 Console.WriteLine("Output subfolder name:");
                 String outputSubfolderName = GetStringInput(true, Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()));
@@ -96,6 +98,7 @@
                     targetAssemblyPath = path,
                     editorRenameTo = editorName,
                     removeNonSerializedTypesForEditor = stripNonSerialized,
+                    removeReadonly = removeReadonly
                 };
             } while(!ConfirmSettings(options));
             return options;
@@ -105,7 +108,7 @@
         {
             String nl = Environment.NewLine;
             Console.WriteLine(
-$"Settings:{nl}{nameof(options.outputReferenceStub)}: {options.outputReferenceStub}{nl}{nameof(options.makeReferenceStubPublic)}: {options.makeReferenceStubPublic}{nl}{nameof(options.outputEditorStub)}: {options.outputEditorStub}{nl}{nameof(options.makeEditorStubPublic)}: {options.makeEditorStubPublic}{nl}{nameof(options.outputForwardAssembly)}{nl}{options.outputForwardAssembly}{nl}{nameof(options.editorRenameTo)}: {options.editorRenameTo}{nl}{nameof(options.removeNonSerializedTypesForEditor)}: {options.removeNonSerializedTypesForEditor}{nl}{nameof(options.outputPath)}: {options.outputPath}{nl}{nameof(options.targetAssemblyPath)}: {options.targetAssemblyPath}{nl}{nl}Confirm?");
+$"Settings:{nl}{nameof(options.outputReferenceStub)}: {options.outputReferenceStub}{nl}{nameof(options.makeReferenceStubPublic)}: {options.makeReferenceStubPublic}{nl}{nameof(options.outputEditorStub)}: {options.outputEditorStub}{nl}{nameof(options.makeEditorStubPublic)}: {options.makeEditorStubPublic}{nl}{nameof(options.outputForwardAssembly)}{nl}{options.outputForwardAssembly}{nl}{nameof(options.editorRenameTo)}: {options.editorRenameTo}{nl}{nameof(options.removeReadonly)}: {options.removeReadonly}{nl}{nameof(options.removeNonSerializedTypesForEditor)}: {options.removeNonSerializedTypesForEditor}{nl}{nameof(options.outputPath)}: {options.outputPath}{nl}{nameof(options.targetAssemblyPath)}: {options.targetAssemblyPath}{nl}{nl}Confirm?");
             Boolean res;
             while (!PositiveOrNegativeInput(out res)) { }
             return res;

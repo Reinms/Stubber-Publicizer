@@ -22,7 +22,7 @@
                 String outputPath = options.outputPath;
                 String editorName = options.editorRenameTo;
 
-                if(String.IsNullOrEmpty(targetPath) || String.IsNullOrEmpty(outputPath) || String.IsNullOrEmpty(editorName))
+                if(String.IsNullOrEmpty(targetPath) || String.IsNullOrEmpty(outputPath) || ((options.outputEditorStub || options.outputForwardAssembly) && String.IsNullOrEmpty(editorName)))
                 {
                     Console.WriteLine("Invalid path");
                     return false;
@@ -56,7 +56,7 @@
                     foreach(ModuleDefinition module in targetAssembly.Modules)
                     {
                         var typesToRemove = new HashSet<TypeDefinition>();
-                        foreach(TypeDefinition type in module.Types) if(ReferenceStubType(type, options.makeReferenceStubPublic)) _ = typesToRemove.Add(type);
+                        foreach(TypeDefinition type in module.Types) if(ReferenceStubType(type, options.makeReferenceStubPublic, options.removeReadonly)) _ = typesToRemove.Add(type);
                         foreach(TypeDefinition t in typesToRemove) _ = module.Types.Remove(t);
                     }
                     
@@ -74,7 +74,7 @@
                     foreach(ModuleDefinition module in targetAssembly.Modules)
                     {
                         var typesToRemove = new HashSet<TypeDefinition>();
-                        foreach(TypeDefinition type in module.Types) if(EditorStubType(type, options.makeEditorStubPublic)) _ = typesToRemove.Add(type);
+                        foreach(TypeDefinition type in module.Types) if(EditorStubType(type, options.makeEditorStubPublic, options.removeReadonly)) _ = typesToRemove.Add(type);
                         foreach(TypeDefinition t in typesToRemove) _ = module.Types.Remove(t);
                     }
 
@@ -208,7 +208,7 @@
             proc.Emit(OpCodes.Ret);
         }
 
-        private static Boolean ReferenceStubType(TypeDefinition type, Boolean makePub )
+        private static Boolean ReferenceStubType(TypeDefinition type, Boolean makePub, Boolean removeReadonly )
         {
             if(type is null) return false;
 
@@ -234,7 +234,7 @@
             foreach(EventDefinition e in eventsToRemove) _ = type.Events.Remove(e);
 
             var fieldsToRemove = new HashSet<FieldDefinition>();
-            foreach(FieldDefinition field in type.Fields) if(ReferenceStubField(field, makePub)) _ = fieldsToRemove.Add(field);
+            foreach(FieldDefinition field in type.Fields) if(ReferenceStubField(field, makePub, removeReadonly)) _ = fieldsToRemove.Add(field);
             foreach(FieldDefinition f in fieldsToRemove) _ = type.Fields.Remove(f);
 
             var methodsToRemove = new HashSet<MethodDefinition>();
@@ -242,7 +242,7 @@
             foreach(MethodDefinition m in methodsToRemove) _ = type.Methods.Remove(m);
 
             var nestedTypesToRemove = new HashSet<TypeDefinition>();
-            foreach(TypeDefinition sub in type.NestedTypes) if(ReferenceStubType(sub, makePub)) _ = nestedTypesToRemove.Add(sub);
+            foreach(TypeDefinition sub in type.NestedTypes) if(ReferenceStubType(sub, makePub, removeReadonly)) _ = nestedTypesToRemove.Add(sub);
             foreach(TypeDefinition t in nestedTypesToRemove) _ = type.NestedTypes.Remove(t);
 
             if(type.IsNested) foreach(CustomAttribute atr in type.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
@@ -284,7 +284,7 @@
             foreach(CustomAttribute atr in method.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
             return false;
         }
-        private static Boolean ReferenceStubField(FieldDefinition field, Boolean makePub)
+        private static Boolean ReferenceStubField(FieldDefinition field, Boolean makePub, Boolean removeReadonly)
         {
             if(field is null) return false;
             _ = field.Module.ImportReference(field.FieldType);
@@ -309,6 +309,10 @@
                 if(!field.IsPublic && !serialized) field.CustomAttributes.Add(new CustomAttribute(field.Module.ImportReference(nonSerializedAttributeConstructor)));
                 field.IsPublic = true;
             }
+            if( removeReadonly )
+            {
+                field.IsInitOnly = false;
+            }
             return ret;
         }
 
@@ -316,7 +320,7 @@
 
 
 
-        private static Boolean EditorStubType(TypeDefinition type, Boolean makePub)
+        private static Boolean EditorStubType(TypeDefinition type, Boolean makePub, Boolean removeReadonly)
         {
             if(type is null) return false;
             if(type.IsNested) foreach(CustomAttribute atr in type.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
@@ -345,7 +349,7 @@
             foreach(EventDefinition e in eventsToRemove) _ = type.Events.Remove(e);
 
             var fieldsToRemove = new HashSet<FieldDefinition>();
-            foreach(FieldDefinition field in type.Fields) if(EditorStubField(field, makePub)) _ = fieldsToRemove.Add(field);
+            foreach(FieldDefinition field in type.Fields) if(EditorStubField(field, makePub, removeReadonly)) _ = fieldsToRemove.Add(field);
             foreach(FieldDefinition f in fieldsToRemove) _ = type.Fields.Remove(f);
 
 
@@ -354,7 +358,7 @@
             foreach(MethodDefinition m in methodsToRemove) _ = type.Methods.Remove(m);
 
             var nestedTypesToRemove = new HashSet<TypeDefinition>();
-            foreach(TypeDefinition sub in type.NestedTypes) if(EditorStubType(sub, makePub)) _ = nestedTypesToRemove.Add(sub);
+            foreach(TypeDefinition sub in type.NestedTypes) if(EditorStubType(sub, makePub, removeReadonly)) _ = nestedTypesToRemove.Add(sub);
             foreach(TypeDefinition t in nestedTypesToRemove) _ = type.NestedTypes.Remove(t);
 
             return false;
@@ -395,7 +399,7 @@
             foreach(CustomAttribute atr in method.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
             return false;
         }
-        private static Boolean EditorStubField(FieldDefinition field, Boolean makePub)
+        private static Boolean EditorStubField(FieldDefinition field, Boolean makePub, Boolean removeReadonly)
         {
             if(field is null) return false;
             _ = field.Module.ImportReference(field.FieldType);
@@ -419,6 +423,10 @@
             {
                 if(!field.IsPublic && !serialized) field.CustomAttributes.Add(new CustomAttribute(field.Module.ImportReference(nonSerializedAttributeConstructor)));
                 field.IsPublic = true;
+            }
+            if(removeReadonly)
+            {
+                field.IsInitOnly = false;
             }
 
             return ret;
