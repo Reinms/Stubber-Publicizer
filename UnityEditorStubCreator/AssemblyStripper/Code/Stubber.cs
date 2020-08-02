@@ -4,11 +4,13 @@
     using System.Collections.Generic;
     using System.Data;
     using System.IO;
+    using System.Linq;
     using System.Reflection;
     using System.Runtime.CompilerServices;
 
     using Mono.Cecil;
     using Mono.Cecil.Cil;
+    using Mono.Cecil.Rocks;
 
     public static class Stubber
     {
@@ -26,7 +28,7 @@
                     return false;
                 }
 
-                var resolver = new DefaultAssemblyResolver();
+                resolver = new DefaultAssemblyResolver();
                 resolver.AddSearchDirectory(new FileInfo(targetPath).DirectoryName);
                 var readerParams = new ReaderParameters
                 {
@@ -40,7 +42,10 @@
                     return false;
                 }
 
-                String origName = new FileInfo(targetPath).Name;
+                GetReferences(targetAssembly);
+
+                var file = new FileInfo(targetPath);
+                String origName = file.Name.Substring(0,file.Name.Length-file.Extension.Length);
 
                 String outDir = Directory.CreateDirectory(outputPath).FullName;
 
@@ -57,6 +62,8 @@
                     
                     targetAssembly.Write(path);
                     targetAssembly = AssemblyDefinition.ReadAssembly(targetPath, readerParams);
+                    GetReferences(targetAssembly);
+
                 }
                 if(options.outputEditorStub)
                 {
@@ -73,6 +80,7 @@
 
                     targetAssembly.Write(path);
                     targetAssembly = AssemblyDefinition.ReadAssembly(targetPath, readerParams);
+                    GetReferences(targetAssembly);
                 }
                 if(options.outputForwardAssembly)
                 {
@@ -89,7 +97,7 @@
                     {
                         foreach(TypeDefinition type in module.Types)
                         {
-                            ForwardType(type, targetAssembly, sourceAssembly);
+                            ForwardType(type, targetAssembly);
                         }
                     }
 
@@ -103,8 +111,47 @@
                 return false;
             }
         }
-        private static readonly ConstructorInfo nonSerializedAttributeConstructor = typeof(NonSerializedAttribute).GetConstructor(Type.EmptyTypes);
-        private static readonly ConstructorInfo typeForwardedToConstructor = typeof(TypeForwardedToAttribute).GetConstructor(new[] { typeof(Type), });
+        private static DefaultAssemblyResolver resolver;
+        private static MethodReference nonSerializedAttributeConstructor;
+        private static MethodReference typeForwardedToConstructor;
+        private static TypeDefinition system_type;
+        
+        private static void GetReferences(AssemblyDefinition assembly)
+        {
+            TypeDefinition sys_NonSerializedAttribute, sys_TypeForwardedToAttribute, sys_Type;
+            sys_NonSerializedAttribute = sys_TypeForwardedToAttribute = sys_Type = null;
+            foreach(ModuleDefinition module in assembly.Modules)
+            {
+                foreach(AssemblyNameReference reffedAssembly in module.AssemblyReferences)
+                {
+                    AssemblyDefinition asm = resolver.Resolve(reffedAssembly);
+                    if(asm is null) continue;
+                    foreach(ModuleDefinition reffedModule in asm.Modules)
+                    {
+                        if(reffedModule.GetType(typeof(TypeForwardedToAttribute).FullName) is TypeDefinition def1) sys_TypeForwardedToAttribute = def1;
+                        if(reffedModule.GetType(typeof(NonSerializedAttribute).FullName) is TypeDefinition def2) sys_NonSerializedAttribute = def2;
+                        if(reffedModule.GetType("System", "Type") is TypeDefinition def3) sys_Type = def3;
+                    }
+                }
+            }
+
+            if(sys_NonSerializedAttribute is null) Console.WriteLine($"Unable to resolve type {nameof(NonSerializedAttribute)}, make sure that you are running on an assembly that is in its normal location");
+            if(sys_TypeForwardedToAttribute is null) Console.WriteLine($"Unable to resolve type {nameof(TypeForwardedToAttribute)}, make sure that you are running on an assembly that is in its normal location");
+            if(sys_Type is null) Console.WriteLine($"Unable to resolve type {nameof(Type)}, make sure that you are running on an assembly that is in its normal location");
+
+            system_type = sys_Type;
+
+            static Boolean HasNoParameters(MethodDefinition method) => method.HasParameters == false;
+            MethodDefinition nonSerializedConstructor = sys_NonSerializedAttribute.GetConstructors().First(HasNoParameters);
+            if(nonSerializedConstructor is null) Console.WriteLine($"No constructor found for {nameof(NonSerializedAttribute)}");
+            nonSerializedAttributeConstructor = nonSerializedConstructor;
+
+            static Boolean HasSingleArgumentOfTypeType(MethodDefinition method) => method.HasParameters && method.Parameters.Count == 1 && method.Parameters[0].ParameterType.FullName == typeof(System.Type).FullName;
+            MethodDefinition typeForwardedConstr = sys_TypeForwardedToAttribute.GetConstructors().First(HasSingleArgumentOfTypeType);
+            if(typeForwardedConstr is null) Console.WriteLine($"No constructor found for {nameof(TypeForwardedToAttribute)}");
+            typeForwardedToConstructor = typeForwardedConstr;
+        }
+
 
         private static void CreateSimpleMethodBody(MethodDefinition method)
         {
@@ -163,7 +210,6 @@
         private static Boolean ReferenceStubType(TypeDefinition type, Boolean makePub )
         {
             if(type is null) return false;
-            if(type.IsNested) foreach(CustomAttribute atr in type.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
 
             if(makePub)
             {  
@@ -176,52 +222,93 @@
                 }
             }
 
-            var methodsToRemove = new HashSet<MethodDefinition>();
-            foreach(MethodDefinition method in type.Methods) if(ReferenceStubMethod(method, makePub)) _ = methodsToRemove.Add(method);
-            foreach(MethodDefinition m in methodsToRemove) _ = type.Methods.Remove(m);
+            var methodBlacklist = new HashSet<MethodDefinition>();
 
             var propertiesToRemove = new HashSet<PropertyDefinition>();
-            foreach(PropertyDefinition property in type.Properties) if(ReferenceStubProperty(property, makePub)) _ = propertiesToRemove.Add(property);
+            foreach(PropertyDefinition property in type.Properties) if(ReferenceStubProperty(property, makePub, methodBlacklist)) _ = propertiesToRemove.Add(property);
             foreach(PropertyDefinition p in propertiesToRemove) _ = type.Properties.Remove(p);
 
+            var eventsToRemove = new HashSet<EventDefinition>();
+            foreach(EventDefinition eventDef in type.Events) if(ReferenceStubEvent(eventDef, makePub, methodBlacklist)) _ = eventsToRemove.Add(eventDef);
+            foreach(EventDefinition e in eventsToRemove) _ = type.Events.Remove(e);
 
             var fieldsToRemove = new HashSet<FieldDefinition>();
             foreach(FieldDefinition field in type.Fields) if(ReferenceStubField(field, makePub)) _ = fieldsToRemove.Add(field);
             foreach(FieldDefinition f in fieldsToRemove) _ = type.Fields.Remove(f);
 
+            var methodsToRemove = new HashSet<MethodDefinition>();
+            foreach(MethodDefinition method in type.Methods) if(ReferenceStubMethod(method, makePub, methodBlacklist)) _ = methodsToRemove.Add(method);
+            foreach(MethodDefinition m in methodsToRemove) _ = type.Methods.Remove(m);
+
             var nestedTypesToRemove = new HashSet<TypeDefinition>();
             foreach(TypeDefinition sub in type.NestedTypes) if(ReferenceStubType(sub, makePub)) _ = nestedTypesToRemove.Add(sub);
             foreach(TypeDefinition t in nestedTypesToRemove) _ = type.NestedTypes.Remove(t);
 
+            if(type.IsNested) foreach(CustomAttribute atr in type.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
             return false;
         }
 
-        private static Boolean ReferenceStubProperty(PropertyDefinition property, Boolean makePub)
+        private static Boolean ReferenceStubProperty(PropertyDefinition property, Boolean makePub, HashSet<MethodDefinition> blacklist)
         {
-            foreach(CustomAttribute atr in property.CustomAttributes) if (atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
-            _ = ReferenceStubMethod(property.GetMethod, makePub);
-            _ = ReferenceStubMethod(property.SetMethod, makePub);
+            if(property is null) return false;
+            _ = property.Module.ImportReference(property.PropertyType);
+            _ = ReferenceStubMethod(property.GetMethod, makePub, blacklist);
+            _ = ReferenceStubMethod(property.SetMethod, makePub, blacklist);
+            foreach(CustomAttribute atr in property.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
             return false;
         }
 
-        private static Boolean ReferenceStubMethod(MethodDefinition method, Boolean makePub)
+        private static Boolean ReferenceStubEvent(EventDefinition eventDef, Boolean makePub, HashSet<MethodDefinition> blacklist)
+        {
+            if(eventDef is null) return false;
+            _ = eventDef.Module.ImportReference(eventDef.EventType);
+            _ = ReferenceStubMethod(eventDef.AddMethod, makePub, blacklist);
+            _ = ReferenceStubMethod(eventDef.RemoveMethod, makePub, blacklist);
+            _ = ReferenceStubMethod(eventDef.InvokeMethod, makePub, blacklist);
+            foreach(MethodDefinition m in eventDef.OtherMethods) _ = ReferenceStubMethod(m, makePub, blacklist);
+            foreach(CustomAttribute atr in eventDef.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
+            return false;
+        }
+
+        private static Boolean ReferenceStubMethod(MethodDefinition method, Boolean makePub, HashSet<MethodDefinition> blacklist)
         {
             if(method is null) return false;
-            foreach(CustomAttribute atr in method.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
+            _ = method.Module.ImportReference(method.ReturnType);
+            foreach(ParameterDefinition parameter in method.Parameters) _ = method.Module.ImportReference(parameter.ParameterType);
+            if(!blacklist.Add(method)) return false;
             if(makePub) method.IsPublic = true;
             method?.Body?.Variables?.Clear();
             method?.Body?.Instructions?.Clear();
             CreateSimpleMethodBody(method);
-
+            foreach(CustomAttribute atr in method.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
             return false;
         }
         private static Boolean ReferenceStubField(FieldDefinition field, Boolean makePub)
         {
             if(field is null) return false;
-            foreach(CustomAttribute atr in field.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
-            if(makePub) field.IsPublic = true;
-
-            return false;
+            _ = field.Module.ImportReference(field.FieldType);
+            Boolean ret = false;
+            Boolean serialized = false;
+            foreach(CustomAttribute atr in field.CustomAttributes)
+            {
+                switch(atr.AttributeType.FullName)
+                {
+                    case "System.Runtime.CompilerServices.CompilerGeneratedAttribute":
+                        ret = true;
+                        continue;
+                    case "UnityEngine.SerializeField":
+                        serialized = true;
+                        continue;
+                    default:
+                        continue;
+                }
+            }
+            if(makePub)
+            {
+                if(!field.IsPublic && !serialized) field.CustomAttributes.Add(new CustomAttribute(field.Module.ImportReference(nonSerializedAttributeConstructor)));
+                field.IsPublic = true;
+            }
+            return ret;
         }
 
 
@@ -244,18 +331,26 @@
                 }
             }
 
-            var methodsToRemove = new HashSet<MethodDefinition>();
-            foreach(MethodDefinition method in type.Methods) if(EditorStubMethod(method, makePub)) _ = methodsToRemove.Add(method);
-            foreach(MethodDefinition m in methodsToRemove) _ = type.Methods.Remove(m);
+            var methodBlacklist = new HashSet<MethodDefinition>();
+
+
 
             var propertiesToRemove = new HashSet<PropertyDefinition>();
-            foreach(PropertyDefinition property in type.Properties) if(EditorStubProperty(property, makePub)) _ = propertiesToRemove.Add(property);
+            foreach(PropertyDefinition property in type.Properties) if(EditorStubProperty(property, makePub, methodBlacklist)) _ = propertiesToRemove.Add(property);
             foreach(PropertyDefinition p in propertiesToRemove) _ = type.Properties.Remove(p);
 
+            var eventsToRemove = new HashSet<EventDefinition>();
+            foreach(EventDefinition eventDef in type.Events) if(EditorStubEvent(eventDef, makePub, methodBlacklist)) _ = eventsToRemove.Add(eventDef);
+            foreach(EventDefinition e in eventsToRemove) _ = type.Events.Remove(e);
 
             var fieldsToRemove = new HashSet<FieldDefinition>();
             foreach(FieldDefinition field in type.Fields) if(EditorStubField(field, makePub)) _ = fieldsToRemove.Add(field);
             foreach(FieldDefinition f in fieldsToRemove) _ = type.Fields.Remove(f);
+
+
+            var methodsToRemove = new HashSet<MethodDefinition>();
+            foreach(MethodDefinition method in type.Methods) if(EditorStubMethod(method, makePub, methodBlacklist)) _ = methodsToRemove.Add(method);
+            foreach(MethodDefinition m in methodsToRemove) _ = type.Methods.Remove(m);
 
             var nestedTypesToRemove = new HashSet<TypeDefinition>();
             foreach(TypeDefinition sub in type.NestedTypes) if(EditorStubType(sub, makePub)) _ = nestedTypesToRemove.Add(sub);
@@ -264,35 +359,54 @@
             return false;
         }
 
-        private static Boolean EditorStubProperty(PropertyDefinition property, Boolean makePub)
+        private static Boolean EditorStubProperty(PropertyDefinition property, Boolean makePub, HashSet<MethodDefinition> blacklist)
         {
+            if(property is null) return false;
+            _ = property.Module.ImportReference(property.PropertyType);
+            _ = EditorStubMethod(property.GetMethod, makePub, blacklist);
+            _ = EditorStubMethod(property.SetMethod, makePub, blacklist);
             foreach(CustomAttribute atr in property.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
-            _ = EditorStubMethod(property.GetMethod, makePub);
-            _ = EditorStubMethod(property.SetMethod, makePub);
             return false;
         }
 
-        private static Boolean EditorStubMethod(MethodDefinition method, Boolean makePub)
+        private static Boolean EditorStubEvent(EventDefinition eventDef, Boolean makePub, HashSet<MethodDefinition> blacklist)
+        {
+            if(eventDef is null) return false;
+            _ = eventDef.Module.ImportReference(eventDef.EventType);
+            _ = EditorStubMethod(eventDef.AddMethod, makePub, blacklist);
+            _ = EditorStubMethod(eventDef.RemoveMethod, makePub, blacklist);
+            _ = EditorStubMethod(eventDef.InvokeMethod, makePub, blacklist);
+            foreach(MethodDefinition m in eventDef.OtherMethods) _ = EditorStubMethod(m, makePub, blacklist);
+            foreach(CustomAttribute atr in eventDef.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
+            return false;
+        }
+
+        private static Boolean EditorStubMethod(MethodDefinition method, Boolean makePub, HashSet<MethodDefinition> blacklist)
         {
             if(method is null) return false;
-            foreach(CustomAttribute atr in method.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
+            _ = method.Module.ImportReference(method.ReturnType);
+            foreach(ParameterDefinition parameter in method.Parameters) _ = method.Module.ImportReference(parameter.ParameterType);
+            if(!blacklist.Add(method)) return false;
             if(makePub) method.IsPublic = true;
             method?.Body?.Variables?.Clear();
             method?.Body?.Instructions?.Clear();
             CreateSimpleMethodBody(method);
-
+            foreach(CustomAttribute atr in method.CustomAttributes) if(atr.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute") return true;
             return false;
         }
         private static Boolean EditorStubField(FieldDefinition field, Boolean makePub)
         {
             if(field is null) return false;
+            _ = field.Module.ImportReference(field.FieldType);
             Boolean serialized = false;
+            Boolean ret = false;
             foreach(CustomAttribute atr in field.CustomAttributes)
             {
                 switch(atr.AttributeType.FullName)
                 {
                     case "System.Runtime.CompilerServices.CompilerGeneratedAttribute":
-                        return true;
+                        ret = true;
+                        continue;
                     case "UnityEngine.SerializeField":
                         serialized = true;
                         continue;
@@ -302,22 +416,18 @@
             }
             if(makePub)
             {
-                if(!field.IsPublic && !serialized)
-                {
-                    //Console.WriteLine($"Should add NonSerialized to field: {field.FullName}");
-                    field.CustomAttributes.Add(new CustomAttribute(field.Module.ImportReference(nonSerializedAttributeConstructor)));
-                }
+                if(!field.IsPublic && !serialized) field.CustomAttributes.Add(new CustomAttribute(field.Module.ImportReference(nonSerializedAttributeConstructor)));
                 field.IsPublic = true;
             }
 
-            return false;
+            return ret;
         }
 
 
-        private static void ForwardType(TypeDefinition type, AssemblyDefinition from, AssemblyDefinition to)
+        private static void ForwardType(TypeDefinition type, AssemblyDefinition from)
         {
             var atr = new CustomAttribute(from.MainModule.ImportReference(typeForwardedToConstructor));
-            atr.ConstructorArguments.Add(new CustomAttributeArgument(from.MainModule.ImportReference(typeof(Type)), from.MainModule.ImportReference(type)));
+            atr.ConstructorArguments.Add(new CustomAttributeArgument(from.MainModule.ImportReference(system_type), from.MainModule.ImportReference(type)));
             from.CustomAttributes.Add(atr);
         }
 

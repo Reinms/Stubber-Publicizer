@@ -50,11 +50,24 @@
             StubbingOptions options;
             do
             {
+                Boolean stripNonSerialized = false;
+                String editorName = "";
+
                 OutputAndPublic("Reference Assembly", true, out Boolean outputRefAsm, out Boolean pubRefAsm);
                 OutputAndPublic("Editor Assembly", true, out Boolean outputEditorAsm, out Boolean pubEditorAsm);
                 OutputAndPublic("Forward Assembly", false, out Boolean outputForwardAsm, out Boolean pubForwardAsm);
-                Console.WriteLine("Generated Assembly Name:");
-                String editorName = GetStringInput(false, Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()));
+                if( outputEditorAsm || outputForwardAsm)
+                {
+                    Console.WriteLine("Editor/Forward assembly name:");
+                    editorName = GetStringInput(false, Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()));
+                    if(outputEditorAsm)
+                    {
+                        Console.WriteLine("Strip non-serialized types from editor assembly? (recommended true)");
+                        while(!PositiveOrNegativeInput(out stripNonSerialized)) { }
+                    }
+                }
+                
+                
                 Console.WriteLine("Output subfolder name:");
                 String outputSubfolderName = GetStringInput(true, Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()));
                 String outputPath = new FileInfo(path).DirectoryName;
@@ -76,6 +89,7 @@
                     outputPath = outputPath,
                     targetAssemblyPath = path,
                     editorRenameTo = editorName,
+                    removeNonSerializedTypesForEditor = stripNonSerialized,
                 };
             } while(!ConfirmSettings(options));
             return options;
@@ -85,7 +99,7 @@
         {
             String nl = Environment.NewLine;
             Console.WriteLine(
-$"Settings:{nl}{nameof(options.outputReferenceStub)}: {options.outputReferenceStub}{nl}{nameof(options.makeReferenceStubPublic)}: {options.makeReferenceStubPublic}{nl}{nameof(options.outputEditorStub)}: {options.outputEditorStub}{nl}{nameof(options.makeEditorStubPublic)}: {options.makeEditorStubPublic}{nl}{nameof(options.outputForwardAssembly)}{nl}{options.outputForwardAssembly}{nl}{nameof(options.editorRenameTo)}: {options.editorRenameTo}{nl}{nameof(options.outputPath)}: {options.outputPath}{nl}{nameof(options.targetAssemblyPath)}: {options.targetAssemblyPath}{nl}{nl}Confirm?");
+$"Settings:{nl}{nameof(options.outputReferenceStub)}: {options.outputReferenceStub}{nl}{nameof(options.makeReferenceStubPublic)}: {options.makeReferenceStubPublic}{nl}{nameof(options.outputEditorStub)}: {options.outputEditorStub}{nl}{nameof(options.makeEditorStubPublic)}: {options.makeEditorStubPublic}{nl}{nameof(options.outputForwardAssembly)}{nl}{options.outputForwardAssembly}{nl}{nameof(options.editorRenameTo)}: {options.editorRenameTo}{nl}{nameof(options.removeNonSerializedTypesForEditor)}: {options.removeNonSerializedTypesForEditor}{nl}{nameof(options.outputPath)}: {options.outputPath}{nl}{nameof(options.targetAssemblyPath)}: {options.targetAssemblyPath}{nl}{nl}Confirm?");
             Boolean res;
             while (!PositiveOrNegativeInput(out res)) { }
             return res;

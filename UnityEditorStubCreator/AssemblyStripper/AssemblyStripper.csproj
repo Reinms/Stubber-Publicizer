@@ -2,15 +2,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	 <TargetFramework>net5.0</TargetFramework>
+	<TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyVersion>1.0.0.131</AssemblyVersion>
     <FileVersion>1.0.0.131</FileVersion>
-	  <OutputType>Library</OutputType>
+	<OutputType>Library</OutputType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
 
 
