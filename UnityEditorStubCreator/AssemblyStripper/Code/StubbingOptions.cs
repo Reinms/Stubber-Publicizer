@@ -1,14 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace AssemblyStripper
+﻿namespace AssemblyStripper
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+
     public struct StubbingOptions
     {
+        public Boolean outputEditorStub;
+        public Boolean makeEditorStubPublic;
+        public Boolean outputReferenceStub;
+        public Boolean makeReferenceStubPublic;
+        public Boolean outputForwardAssembly;
         public String targetAssemblyPath;
         public String outputPath;
-        public String pathToEditor;
-        public String assemblyName;
+        public String editorRenameTo;
     }
 }
