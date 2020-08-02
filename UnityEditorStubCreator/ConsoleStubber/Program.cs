@@ -54,6 +54,7 @@
                 String editorName = "";
 
                 OutputAndPublic("Reference Assembly", true, out Boolean outputRefAsm, out Boolean pubRefAsm);
+#if EDITORFWD
                 OutputAndPublic("Editor Assembly", true, out Boolean outputEditorAsm, out Boolean pubEditorAsm);
                 OutputAndPublic("Forward Assembly", false, out Boolean outputForwardAsm, out Boolean pubForwardAsm);
                 if( outputEditorAsm || outputForwardAsm)
@@ -66,8 +67,13 @@
                         while(!PositiveOrNegativeInput(out stripNonSerialized)) { }
                     }
                 }
-                
-                
+#else
+                Boolean outputEditorAsm = false;
+                Boolean pubEditorAsm = false;
+                Boolean outputForwardAsm = false;
+#endif
+
+
                 Console.WriteLine("Output subfolder name:");
                 String outputSubfolderName = GetStringInput(true, Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()));
                 String outputPath = new FileInfo(path).DirectoryName;
