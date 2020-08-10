@@ -5,6 +5,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AssemblyVersion>1.0.0.113</AssemblyVersion>
     <FileVersion>1.0.0.113</FileVersion>
+	  
 
   </PropertyGroup>
 
