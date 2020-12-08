@@ -142,12 +142,12 @@
             system_type = sys_Type;
 
             static Boolean HasNoParameters(MethodDefinition method) => method.HasParameters == false;
-            MethodDefinition nonSerializedConstructor = sys_NonSerializedAttribute.GetConstructors().First(HasNoParameters);
+            MethodDefinition nonSerializedConstructor = sys_NonSerializedAttribute?.GetConstructors()?.First(HasNoParameters);
             if(nonSerializedConstructor is null) Console.WriteLine($"No constructor found for {nameof(NonSerializedAttribute)}");
             nonSerializedAttributeConstructor = nonSerializedConstructor;
 
             static Boolean HasSingleArgumentOfTypeType(MethodDefinition method) => method.HasParameters && method.Parameters.Count == 1 && method.Parameters[0].ParameterType.FullName == typeof(System.Type).FullName;
-            MethodDefinition typeForwardedConstr = sys_TypeForwardedToAttribute.GetConstructors().First(HasSingleArgumentOfTypeType);
+            MethodDefinition typeForwardedConstr = sys_TypeForwardedToAttribute?.GetConstructors()?.First(HasSingleArgumentOfTypeType);
             if(typeForwardedConstr is null) Console.WriteLine($"No constructor found for {nameof(TypeForwardedToAttribute)}");
             typeForwardedToConstructor = typeForwardedConstr;
         }
@@ -306,7 +306,7 @@
             }
             if(makePub)
             {
-                if(!field.IsPublic && !serialized) field.CustomAttributes.Add(new CustomAttribute(field.Module.ImportReference(nonSerializedAttributeConstructor)));
+                if(!field.IsPublic && !serialized && nonSerializedAttributeConstructor is not null) field.CustomAttributes.Add(new CustomAttribute(field.Module.ImportReference(nonSerializedAttributeConstructor)));
                 field.IsPublic = true;
             }
             if( removeReadonly )
@@ -421,7 +421,7 @@
             }
             if(makePub)
             {
-                if(!field.IsPublic && !serialized) field.CustomAttributes.Add(new CustomAttribute(field.Module.ImportReference(nonSerializedAttributeConstructor)));
+                if(!field.IsPublic && !serialized && nonSerializedAttributeConstructor is not null) field.CustomAttributes.Add(new CustomAttribute(field.Module.ImportReference(nonSerializedAttributeConstructor)));
                 field.IsPublic = true;
             }
             if(removeReadonly)
@@ -435,6 +435,7 @@
 
         private static void ForwardType(TypeDefinition type, AssemblyDefinition from)
         {
+            if(typeForwardedToConstructor is null || system_type is null) return;
             var atr = new CustomAttribute(from.MainModule.ImportReference(typeForwardedToConstructor));
             atr.ConstructorArguments.Add(new CustomAttributeArgument(from.MainModule.ImportReference(system_type), from.MainModule.ImportReference(type)));
             from.CustomAttributes.Add(atr);

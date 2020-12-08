@@ -15,6 +15,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DnlibAssemblyStripper", "DnlibAssemblyStripper\DnlibAssemblyStripper.csproj", "{DF86BF2B-3F99-49B4-97AB-077F8CB2E887}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,22 +31,15 @@ Global
 		{D42AFA6F-B8F0-43BE-A03B-3991BA2F7D96}.Debug|Any CPU.Build.0 = Release|Any CPU
 		{D42AFA6F-B8F0-43BE-A03B-3991BA2F7D96}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D42AFA6F-B8F0-43BE-A03B-3991BA2F7D96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF86BF2B-3F99-49B4-97AB-077F8CB2E887}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF86BF2B-3F99-49B4-97AB-077F8CB2E887}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF86BF2B-3F99-49B4-97AB-077F8CB2E887}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF86BF2B-3F99-49B4-97AB-077F8CB2E887}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DD8353EA-D192-4478-8C1F-EFF43032C8F2}
-	EndGlobalSection
-	GlobalSection(AutomaticVersions) = postSolution
-		UpdateAssemblyVersion = True
-		UpdateAssemblyFileVersion = True
-		UpdateAssemblyInfoVersion = True
-		AssemblyVersionSettings = IncrementOnDemand.IncrementOnDemand.IncrementOnDemand.IncrementWithResetOnIncrease
-		AssemblyFileVersionSettings = IncrementOnDemand.IncrementOnDemand.IncrementOnDemand.IncrementWithResetOnIncrease
-		AssemblyInfoVersionSettings = IncrementOnDemand.IncrementOnDemand.IncrementOnDemand.IncrementWithResetOnIncrease
-		UpdatePackageVersion = False
-		AssemblyInfoVersionType = SettingsVersion
-		InheritWinAppVersionFrom = None
 	EndGlobalSection
 EndGlobal
